@@ -21,7 +21,6 @@ export default function Sidebar({ userProfile }: { userProfile: any }) {
       return [
         { name: 'Mon Tableau de Bord', icon: <LayoutDashboard size={20} />, path: '/experts/dashboard' },
         { name: 'Mes Missions', icon: <FolderGit2 size={20} />, path: '/experts/projets' }, // Lien spécifique
-        { name: 'Mes Honoraires', icon: <Wallet size={20} />, path: '/experts/finances' },
       ];
     }
 

@@ -76,6 +76,22 @@ export default function DashboardExpert() {
             <p className="text-3xl font-black text-white mt-1">{stats.gains.toLocaleString()} <span className="text-xs">FCFA</span></p>
           </div>
         </div>
+        {stats.terminees + stats.enCours > 0 && (
+          <div className="mb-8 bg-white p-6 rounded-[2rem] border-2 border-gray-100">
+            <div className="flex justify-between items-center mb-4">
+              <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Progression Globale du Contrat</p>
+              <p className="text-sm font-black text-[#7DB95C]">
+                {Math.round((stats.terminees / (stats.terminees + stats.enCours)) * 100)}%
+              </p>
+            </div>
+            <div className="w-full h-4 bg-gray-100 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-[#7DB95C] transition-all duration-1000 ease-out"
+                style={{ width: `${(stats.terminees / (stats.terminees + stats.enCours)) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
 
         {/* LISTE DES MISSIONS */}
         <div className="bg-white rounded-[3rem] border-2 border-gray-100 shadow-sm overflow-hidden">
@@ -120,7 +136,10 @@ export default function DashboardExpert() {
                       </span>
                     </td>
                     <td className="p-6 text-right">
-                      <button className="bg-gray-900 text-white text-[9px] font-black px-4 py-2 rounded-xl hover:bg-[#00AEEF] transition-all uppercase tracking-widest">
+                      <button 
+                        onClick={() => router.push(`/experts/phases/${phase.id}`)}
+                        className="bg-gray-900 text-white text-[9px] font-black px-4 py-2 rounded-xl hover:bg-[#00AEEF] transition-all uppercase tracking-widest"
+                      >
                         Ouvrir
                       </button>
                     </td>

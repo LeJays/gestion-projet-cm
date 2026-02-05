@@ -4,10 +4,12 @@ import { supabase } from '@/lib/supabase';
 import Sidebar from '@/components/Sidebar';
 import { Plus, Phone, Mail, User, Loader2, Trash2, Edit3 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation'; // Ajout du router
 
 export default function ListeClients() {
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter(); // Initialisation du router
 
   useEffect(() => {
     fetchClients();
@@ -66,13 +68,20 @@ export default function ListeClients() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {clients.map((client) => (
-              <div key={client.id} className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 hover:shadow-xl hover:border-blue-50 transition-all duration-300 group relative overflow-hidden">
+              <div 
+                key={client.id} 
+                onClick={() => router.push(`/clients/${client.id}`)} // Redirection vers l'état du client
+                className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 hover:shadow-xl hover:border-blue-50 transition-all duration-300 group relative overflow-hidden cursor-pointer"
+              >
                 
                 {/* Petit badge décoratif */}
                 <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-[#7DB95C]/10 to-transparent rounded-bl-full"></div>
                 
-                {/* BOUTONS D'ACTION (Apparaissent au survol) */}
-                <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
+                {/* BOUTONS D'ACTION */}
+                <div 
+                   className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"
+                   onClick={(e) => e.stopPropagation()} // Empêche de déclencher la redirection quand on clique sur modifier/supprimer
+                >
                   <Link href={`/clients/modifier/${client.id}`} className="p-2 bg-blue-50 text-[#00AEEF] rounded-xl hover:bg-[#00AEEF] hover:text-white transition shadow-sm">
                     <Edit3 size={16} />
                   </Link>

@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+export const runtime = 'edge';
 
 export default function GestionPhasesAssistance({ params }: { params: Promise<{ id: string, actId: string }> }) {
   const { id, actId } = use(params);

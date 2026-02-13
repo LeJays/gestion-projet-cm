@@ -4,9 +4,10 @@ import { supabase } from '@/lib/supabase';
 import { useParams, useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 import { 
-  ArrowLeft, Briefcase, Landmark, Clock, 
-  CheckCircle2, AlertTriangle, TrendingUp, DollarSign, Mail, Phone, PlusCircle, X
+  ArrowLeft, Landmark, CheckCircle2, AlertTriangle, 
+  DollarSign, PlusCircle, X, Receipt, Wallet, TrendingUp
 } from 'lucide-react';
+import { toast, Toaster } from 'sonner';
 
 export default function EtatClientDirection() {
   const { id } = useParams();
@@ -34,43 +35,40 @@ export default function EtatClientDirection() {
     setLoading(false);
   };
 
-  // --- LOGIQUE DE PAIEMENT ---
   const handlePayment = async () => {
     if (!selectedProjet || !nouveauVersement) return;
 
     const montantVerse = Number(nouveauVersement);
     const nouveauCumul = (Number(selectedProjet.montant_paye) || 0) + montantVerse;
-    const totalDu = Number(selectedProjet.montant_total);
-
-    // Déterminer le nouveau statut de paiement automatiquement
-    let nouveauStatut = selectedProjet.statut_paiement;
-    if (nouveauCumul >= totalDu) nouveauStatut = 'paye';
-    else if (nouveauCumul > 0) nouveauStatut = 'prepaye';
 
     const { error } = await supabase
       .from('projets')
-      .update({ 
-        montant_paye: nouveauCumul,
-        statut_paiement: nouveauStatut
-      })
+      .update({ montant_paye: nouveauCumul })
       .eq('id', selectedProjet.id);
 
     if (!error) {
+      toast.success("Versement enregistré");
       setIsModalOpen(false);
       setNouveauVersement("");
       fetchClientEtat();
     } else {
-      alert("Erreur lors de l'encaissement : " + error.message);
+      toast.error("Erreur : " + error.message);
     }
   };
 
-  // --- CALCULS FINANCIERS ---
+  // --- LOGIQUE FINANCIÈRE ---
   const caTotal = projets.reduce((acc, p) => acc + (Number(p.montant_total) || 0), 0);
-  const totalDejaPaye = projets.reduce((acc, p) => acc + (Number(p.montant_paye) || 0), 0);
+  
+  // Argent encaissé : Totalité si Standard (Payé), sinon montant_payé si Prépayé
+  const totalDejaPaye = projets.reduce((acc, p) => {
+    if (p.type_projet === 'standard') return acc + (Number(p.montant_total) || 0);
+    return acc + (Number(p.montant_paye) || 0);
+  }, 0);
+
   const resteAEncaisser = caTotal - totalDejaPaye;
   const tauxEncaissement = caTotal > 0 ? Math.round((totalDejaPaye / caTotal) * 100) : 0;
   
-  // Dette opérationnelle : Projets payés mais non terminés
+  // Dette opérationnelle (uniquement pour James)
   const detteOperationnelle = projets
     .filter(p => p.statut_global !== 'termine')
     .reduce((acc, p) => acc + (Number(p.montant_paye) || 0), 0);
@@ -79,6 +77,7 @@ export default function EtatClientDirection() {
 
   return (
     <div className="flex min-h-screen bg-gray-50 text-gray-900">
+      <Toaster position="top-right" richColors closeButton />
       <Sidebar userProfile={{ role: 'direction', nom: 'James' }} />
       
       <main className="flex-1 p-8">
@@ -104,7 +103,7 @@ export default function EtatClientDirection() {
 
           <div className="bg-red-50 p-8 rounded-[3rem] border-2 border-red-100">
             <p className="text-[9px] font-black text-red-400 uppercase mb-1">Dette Opérationnelle</p>
-            <p className="text-2xl font-black text-red-600">-{detteOperationnelle.toLocaleString()} <span className="text-xs uppercase">XAF</span></p>
+            <p className="text-2xl font-black text-red-600">-{detteOperationnelle.toLocaleString()} <span className="text-xs uppercase">FCFA</span></p>
             <p className="text-[8px] font-bold text-red-300 mt-2 uppercase italic">Travaux à livrer</p>
           </div>
         </div>
@@ -127,43 +126,54 @@ export default function EtatClientDirection() {
           </div>
         </div>
 
-        {/* LISTE DES PROJETS AVEC ACTION D'ENCAISSEMENT */}
+        {/* LISTE DES PROJETS */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {projets.map((p) => (
-            <div key={p.id} className="bg-white p-8 rounded-[3rem] border-2 border-gray-100 shadow-sm hover:border-[#00AEEF] transition-all group">
-              <div className="flex justify-between items-start mb-6">
-                <div className="px-4 py-1 rounded-full text-[9px] font-black uppercase bg-gray-100 text-gray-500">
-                  {p.statut_paiement}
+          {projets.map((p) => {
+            const estPayeStandard = p.type_projet === 'standard';
+            const montantRestant = Number(p.montant_total) - (estPayeStandard ? Number(p.montant_total) : (Number(p.montant_paye) || 0));
+            
+            return (
+              <div key={p.id} className="bg-white p-8 rounded-[3rem] border-2 border-gray-100 shadow-sm hover:border-[#00AEEF] transition-all group">
+                <div className="flex justify-between items-start mb-6">
+                  <div className={`px-4 py-1 rounded-full text-[9px] font-black uppercase ${estPayeStandard ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-500'}`}>
+                    {estPayeStandard ? 'Paiement : PAYÉ' : 'Paiement : PRÉPAYÉ'}
+                  </div>
+                  
+                  {/* Bouton d'encaissement uniquement si c'est Prépayé et non soldé */}
+                  {!estPayeStandard && montantRestant > 0 && (
+                    <button 
+                      onClick={() => { setSelectedProjet(p); setIsModalOpen(true); }}
+                      className="bg-[#00AEEF] text-white p-2 rounded-xl hover:bg-black transition-colors"
+                    >
+                      <PlusCircle size={20} />
+                    </button>
+                  )}
                 </div>
+
+                <h3 className="text-2xl font-black uppercase italic mb-4">{p.nom}</h3>
+                
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="bg-gray-50 p-4 rounded-2xl">
+                    <p className="text-[8px] font-black text-gray-400 uppercase">Total Contrat</p>
+                    <p className="text-xs font-black">{Number(p.montant_total).toLocaleString()} FCFA</p>
+                  </div>
+                  <div className={`p-4 rounded-2xl ${estPayeStandard || montantRestant <= 0 ? 'bg-green-50' : 'bg-orange-50'}`}>
+                    <p className={`text-[8px] font-black uppercase ${estPayeStandard || montantRestant <= 0 ? 'text-[#7DB95C]' : 'text-orange-500'}`}>Reste à payer</p>
+                    <p className={`text-xs font-black ${estPayeStandard || montantRestant <= 0 ? 'text-[#7DB95C]' : 'text-orange-600'}`}>
+                      {montantRestant <= 0 ? 'SOLDÉ' : `${montantRestant.toLocaleString()} FCFA`}
+                    </p>
+                  </div>
+                </div>
+
                 <button 
-                  onClick={() => { setSelectedProjet(p); setIsModalOpen(true); }}
-                  className="bg-[#00AEEF] text-white p-2 rounded-xl hover:bg-black transition-colors"
+                  onClick={() => router.push(`/projets/${p.id}`)}
+                  className="w-full py-4 bg-gray-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-[#00AEEF] transition-all"
                 >
-                  <PlusCircle size={20} />
+                  Gérer le chantier
                 </button>
               </div>
-
-              <h3 className="text-2xl font-black uppercase italic mb-4">{p.nom}</h3>
-              
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="bg-gray-50 p-4 rounded-2xl">
-                  <p className="text-[8px] font-black text-gray-400 uppercase">Total Contrat</p>
-                  <p className="text-xs font-black">{Number(p.montant_total).toLocaleString()} XAF</p>
-                </div>
-                <div className="bg-green-50 p-4 rounded-2xl">
-                  <p className="text-[8px] font-black text-[#7DB95C] uppercase">Déjà versé</p>
-                  <p className="text-xs font-black text-[#7DB95C]">{Number(p.montant_paye || 0).toLocaleString()} XAF</p>
-                </div>
-              </div>
-
-              <button 
-                onClick={() => router.push(`/projets/${p.id}`)}
-                className="w-full py-4 bg-gray-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-[#00AEEF] transition-all"
-              >
-                Gérer le chantier
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* MODALE D'ENCAISSEMENT */}
@@ -172,23 +182,23 @@ export default function EtatClientDirection() {
             <div className="bg-white w-full max-w-md rounded-[3rem] p-10 shadow-2xl relative animate-in fade-in zoom-in duration-300">
               <button onClick={() => setIsModalOpen(false)} className="absolute top-8 right-8 text-gray-400 hover:text-black"><X size={24}/></button>
               
-              <h2 className="text-2xl font-black uppercase italic mb-2">Nouvel Encaissement</h2>
+              <h2 className="text-2xl font-black uppercase italic mb-2">Recouvrement Dette</h2>
               <p className="text-sm text-gray-400 font-bold mb-8 uppercase italic">{selectedProjet?.nom}</p>
 
               <div className="space-y-6">
                 <div>
-                  <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block">Montant à verser (FCFA)</label>
+                  <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block">Montant du versement (FCFA)</label>
                   <input 
                     type="number"
                     value={nouveauVersement}
                     onChange={(e) => setNouveauVersement(e.target.value)}
                     className="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl p-5 text-xl font-black outline-none focus:border-[#00AEEF] transition-all"
-                    placeholder="Ex: 500000"
+                    placeholder="0"
                   />
                 </div>
 
                 <div className="bg-blue-50 p-6 rounded-2xl">
-                   <p className="text-[9px] font-black text-[#00AEEF] uppercase mb-1">Reste à payer après versement</p>
+                   <p className="text-[9px] font-black text-[#00AEEF] uppercase mb-1">Nouveau reste après validation</p>
                    <p className="text-lg font-black text-[#00AEEF]">
                      {(Number(selectedProjet?.montant_total) - (Number(selectedProjet?.montant_paye || 0) + Number(nouveauVersement))).toLocaleString()} FCFA
                    </p>

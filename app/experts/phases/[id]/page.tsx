@@ -3,7 +3,10 @@ import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useParams, useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
-import { ArrowLeft, Save, Image as ImageIcon, CheckCircle2, Info, Loader2, Landmark, Upload, X } from 'lucide-react';
+import { 
+  ArrowLeft, Save, Image as ImageIcon, CheckCircle2, 
+  Info, Loader2, Upload, FileText, File
+} from 'lucide-react';
 
 export default function DetailPhaseExpert() {
   const { id } = useParams();
@@ -17,7 +20,7 @@ export default function DetailPhaseExpert() {
   const [uploading, setUploading] = useState(false);
   
   const [statut, setStatut] = useState('');
-  const [photos, setPhotos] = useState<string[]>([]);
+  const [photos, setPhotos] = useState<string[]>([]); // Contiendra désormais URLs images ET docs
 
   useEffect(() => {
     fetchDetail();
@@ -91,6 +94,13 @@ export default function DetailPhaseExpert() {
     setUpdating(false);
   };
 
+  // Fonction pour vérifier si une URL est une image
+  const isImage = (url: string) => {
+    const extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+    const ext = url.split('.').pop()?.toLowerCase();
+    return ext ? extensions.includes(ext) : false;
+  };
+
   if (loading) return <div className="h-screen flex items-center justify-center font-black text-[#00AEEF] italic">CHARGEMENT DU CHANTIER...</div>;
 
   return (
@@ -108,7 +118,6 @@ export default function DetailPhaseExpert() {
 
         <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* COLONNE GAUCHE : INFOS GÉNÉRALES */}
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white p-10 rounded-[2.5rem] border-2 border-gray-100 shadow-sm">
               <h3 className="text-[10px] font-black uppercase text-gray-400 mb-4 flex items-center gap-2">
@@ -131,7 +140,6 @@ export default function DetailPhaseExpert() {
             </div>
           </div>
 
-          {/* COLONNE DROITE : STATUT & PHOTOS (CONDITIONNEL) */}
           <div className="space-y-6">
             <div className="bg-white p-8 rounded-[3rem] shadow-xl border-2 border-gray-50 h-fit">
               <h3 className="text-[10px] font-black uppercase text-gray-400 mb-6 text-center tracking-widest">Mise à jour du statut</h3>
@@ -151,24 +159,37 @@ export default function DetailPhaseExpert() {
                 ))}
               </div>
 
-              {/* ZONE PHOTOS : APPARAIT SEULEMENT SI "TERMINE" EST SELECTIONNÉ */}
               {statut === 'termine' && (
                 <div className="mb-8 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
                   <div className="p-6 bg-orange-50 rounded-[2rem] border-2 border-dashed border-orange-200">
                     <h4 className="text-[9px] font-black uppercase text-orange-600 mb-3 flex items-center gap-2 tracking-widest">
-                      <ImageIcon size={14} /> Preuves (Optionnel)
+                      <ImageIcon size={14} /> Livrables (Images & Docs)
                     </h4>
                     
-                    {/* Galerie miniature */}
                     <div className="grid grid-cols-3 gap-2 mb-4">
                       {photos.map((url, index) => (
-                        <div key={index} className="aspect-square rounded-xl overflow-hidden border border-orange-200">
-                          <img src={url} alt="justificatif" className="w-full h-full object-cover" />
-                        </div>
+                        <a key={index} href={url} target="_blank" rel="noreferrer" className="aspect-square rounded-xl overflow-hidden border border-orange-200 bg-white flex items-center justify-center group relative">
+                          {isImage(url) ? (
+                            <img src={url} alt="justificatif" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="flex flex-col items-center text-orange-400">
+                                <FileText size={24} />
+                                <span className="text-[7px] font-black uppercase mt-1">DOC</span>
+                            </div>
+                          )}
+                        </a>
                       ))}
                     </div>
 
-                    <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleUpload} />
+                    {/* Modification de l'accept pour inclure les documents */}
+                    <input 
+                        type="file" 
+                        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" 
+                        className="hidden" 
+                        ref={fileInputRef} 
+                        onChange={handleUpload} 
+                    />
+                    
                     <button 
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
@@ -176,7 +197,7 @@ export default function DetailPhaseExpert() {
                       className="w-full py-3 bg-white border-2 border-orange-200 rounded-xl text-[9px] font-black text-orange-600 uppercase flex items-center justify-center gap-2 hover:bg-orange-600 hover:text-white transition-all shadow-sm"
                     >
                       {uploading ? <Loader2 className="animate-spin" size={12} /> : <Upload size={12} />}
-                      {uploading ? "Envoi..." : "Ajouter une photo"}
+                      {uploading ? "Envoi..." : "Ajouter un fichier"}
                     </button>
                   </div>
                 </div>

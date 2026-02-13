@@ -14,12 +14,12 @@ export default function DetailProjetNSIK() {
   const [loading, setLoading] = useState(true);
   
   const [showPhaseModal, setShowPhaseModal] = useState(false);
-  const [showActModal, setShowActModal] = useState(false); // État pour le modal activité
+  const [showActModal, setShowActModal] = useState(false);
   const [selectedActId, setSelectedActId] = useState<string | null>(null);
   const [submittingPhase, setSubmittingPhase] = useState(false);
-  const [submittingAct, setSubmittingAct] = useState(false); // État pour le chargement activité
+  const [submittingAct, setSubmittingAct] = useState(false);
 
-  const [actName, setActName] = useState(''); // État pour le nom de l'activité
+  const [actName, setActName] = useState('');
   const [phaseForm, setPhaseForm] = useState({
     nom: '',
     description: '',
@@ -53,7 +53,6 @@ export default function DetailProjetNSIK() {
 
   useEffect(() => { if (id) fetchData(); }, [id]);
 
-  // FONCTION POUR CRÉER UNE ACTIVITÉ
   const handleCreateActivity = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmittingAct(true);
@@ -75,17 +74,29 @@ export default function DetailProjetNSIK() {
 
   const handleCreatePhase = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // LOGIQUE DE CALCUL DU BUDGET RESTANT DE L'ACTIVITÉ
+    const actParente = activites.find(a => a.id === selectedActId);
+    const montantSaisi = parseFloat(phaseForm.montant_reel) || 0;
+    const cumulPhasesExistantes = actParente?.phases?.reduce((acc: number, curr: any) => acc + (Number(curr.montant_reel) || 0), 0) || 0;
+    const resteDisponible = (actParente?.montant || 0) - cumulPhasesExistantes;
+
+    if (montantSaisi > resteDisponible) {
+      alert(`BUDGET INSUFFISANT : L'activité "${actParente?.nom}" n'a plus que ${resteDisponible.toLocaleString()} FCFA de disponible.`);
+      return;
+    }
+
     setSubmittingPhase(true);
     const { error } = await supabase.from('phases').insert([{
       activite_id: selectedActId,
       nom: phaseForm.nom,
       description: phaseForm.description,
       delai: phaseForm.delai,
-      montant_reel: parseFloat(phaseForm.montant_reel) || 0,
+      montant_reel: montantSaisi,
       montant_expert: parseFloat(phaseForm.montant_expert) || 0,
       expert_id: phaseForm.expert_id || null,
-      statut_paiement: phaseForm.statut_paiement,
-      statut_avancement: phaseForm.statut_avancement,
+      statut_paiement: actParente?.statut || 'prepaye', // Héritage direct de l'activité
+      statut_avancement: 'en_attente',
       nb_modifications: 0
     }]);
 
@@ -93,6 +104,8 @@ export default function DetailProjetNSIK() {
       setShowPhaseModal(false);
       setPhaseForm({ nom: '', description: '', delai: '', montant_reel: '', montant_expert: '', expert_id: '', statut_paiement: 'paye', statut_avancement: 'en_attente' });
       fetchData();
+    } else {
+      alert("Erreur Phase: " + error.message);
     }
     setSubmittingPhase(false);
   };
@@ -122,8 +135,7 @@ export default function DetailProjetNSIK() {
             <p className="text-gray-600 font-bold text-sm uppercase tracking-widest mt-2 underline decoration-[#7DB95C] decoration-4">Localisation : {projet?.localisation}</p>
           </div>
           
-          {/* BOUTON AJOUT ACTIVITÉ */}
-            <button 
+          <button 
                 onClick={() => router.push(`/projets/${id}/nouvelle-activite`)} 
                 className="bg-black text-white px-8 py-5 rounded-2xl font-black flex items-center gap-3 hover:bg-[#00AEEF] transition-all shadow-2xl"
             >
@@ -164,51 +176,68 @@ export default function DetailProjetNSIK() {
           ))}
         </div>
 
-
         {/* MODAL PHASE */}
         {showPhaseModal && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
             <div className="bg-white w-full max-w-2xl rounded-[3rem] p-12 shadow-2xl relative border-4 border-[#00AEEF]">
               <button onClick={() => setShowPhaseModal(false)} className="absolute top-8 right-8 text-gray-900 hover:text-red-500"><X size={32}/></button>
               
-              <h2 className="text-4xl font-black uppercase text-gray-900 mb-10 tracking-tighter">Nouvelle Phase</h2>
+              <h2 className="text-4xl font-black uppercase text-gray-900 mb-2 tracking-tighter">Nouvelle Phase</h2>
+              <p className="text-[10px] font-black text-[#00AEEF] uppercase mb-10 tracking-widest">
+                Activité : {activites.find(a => a.id === selectedActId)?.nom}
+              </p>
 
               <form onSubmit={handleCreatePhase} className="grid grid-cols-2 gap-8">
                 <div className="col-span-2">
                   <label className="block text-xs font-black uppercase text-gray-900 mb-2">Nom de la phase</label>
-                  <input required type="text" className="w-full p-5 bg-gray-100 rounded-xl font-bold text-gray-900 border-2 border-gray-300 focus:border-[#00AEEF] outline-none" value={phaseForm.nom} onChange={e => setPhaseForm({...phaseForm, nom: e.target.value})} />
+                  <input required type="text" className="w-full p-5 bg-gray-100 rounded-xl font-bold text-gray-900 border-2 border-gray-300 focus:border-[#00AEEF] outline-none shadow-inner" value={phaseForm.nom} onChange={e => setPhaseForm({...phaseForm, nom: e.target.value})} />
                 </div>
 
                 <div className="col-span-2">
                   <label className="block text-xs font-black uppercase text-gray-900 mb-2">Description</label>
-                  <textarea className="w-full p-5 bg-gray-100 rounded-xl font-bold text-gray-900 border-2 border-gray-300 focus:border-[#00AEEF] outline-none" rows={2} value={phaseForm.description} onChange={e => setPhaseForm({...phaseForm, description: e.target.value})} />
+                  <textarea className="w-full p-5 bg-gray-100 rounded-xl font-bold text-gray-900 border-2 border-gray-300 focus:border-[#00AEEF] outline-none shadow-inner" rows={2} value={phaseForm.description} onChange={e => setPhaseForm({...phaseForm, description: e.target.value})} />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-black uppercase text-gray-900 mb-2">Échéance</label>
-                  <input required type="date" className="w-full p-5 bg-gray-100 rounded-xl font-bold text-gray-900 border-2 border-gray-300" value={phaseForm.delai} onChange={e => setPhaseForm({...phaseForm, delai: e.target.value})} />
+                  <label className="block text-xs font-black uppercase text-gray-900 mb-2">Échéance (Max Activité)</label>
+                  <input 
+                    required 
+                    type="date" 
+                    min={new Date().toISOString().split('T')[0]}
+                    max={activites.find(a => a.id === selectedActId)?.delai_direction}
+                    className="w-full p-5 bg-gray-100 rounded-xl font-bold text-gray-900 border-2 border-gray-300 outline-none focus:border-black shadow-inner" 
+                    value={phaseForm.delai} 
+                    onChange={e => setPhaseForm({...phaseForm, delai: e.target.value})} 
+                  />
                 </div>
 
                 <div>
                   <label className="block text-xs font-black uppercase text-gray-900 mb-2">Expert Responsable</label>
-                  <select required className="w-full p-5 bg-gray-100 rounded-xl font-black text-gray-900 border-2 border-gray-300" value={phaseForm.expert_id} onChange={e => setPhaseForm({...phaseForm, expert_id: e.target.value})}>
+                  <select required className="w-full p-5 bg-gray-100 rounded-xl font-black text-gray-900 border-2 border-gray-300 shadow-inner" value={phaseForm.expert_id} onChange={e => setPhaseForm({...phaseForm, expert_id: e.target.value})}>
                     <option value="">Choisir...</option>
                     {experts.map(exp => <option key={exp.id} value={exp.id}>{exp.nom.toUpperCase()}</option>)}
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-black uppercase text-[#7DB95C] mb-2">Montant Client (FCFA)</label>
-                  <input type="number" className="w-full p-5 bg-gray-100 rounded-xl font-bold text-gray-900 border-2 border-[#7DB95C]" value={phaseForm.montant_reel} onChange={e => setPhaseForm({...phaseForm, montant_reel: e.target.value})} />
+                  <label className="block text-xs font-black uppercase text-[#7DB95C] mb-2">Budget Phase (FCFA)</label>
+                  <input 
+                    type="number" 
+                    required
+                    placeholder={`Max: ${(activites.find(a => a.id === selectedActId)?.montant - (activites.find(a => a.id === selectedActId)?.phases?.reduce((acc:any, c:any) => acc + (Number(c.montant_reel)||0), 0))).toLocaleString()}`}
+                    className="w-full p-5 bg-gray-100 rounded-xl font-bold text-gray-900 border-2 border-[#7DB95C] shadow-inner" 
+                    value={phaseForm.montant_reel} 
+                    onChange={e => setPhaseForm({...phaseForm, montant_reel: e.target.value})} 
+                  />
                 </div>
 
                 <div>
                   <label className="block text-xs font-black uppercase text-orange-600 mb-2">Part Expert (FCFA)</label>
-                  <input type="number" className="w-full p-5 bg-gray-100 rounded-xl font-bold text-gray-900 border-2 border-orange-300" value={phaseForm.montant_expert} onChange={e => setPhaseForm({...phaseForm, montant_expert: e.target.value})} />
+                  <input type="number" className="w-full p-5 bg-gray-100 rounded-xl font-bold text-gray-900 border-2 border-orange-300 shadow-inner" value={phaseForm.montant_expert} onChange={e => setPhaseForm({...phaseForm, montant_expert: e.target.value})} />
                 </div>
 
-                <button type="submit" disabled={submittingPhase} className="col-span-2 py-6 bg-gray-900 text-white rounded-2xl font-black uppercase text-lg tracking-widest hover:bg-[#00AEEF] transition-all shadow-xl mt-4">
-                  {submittingPhase ? <Loader2 className="animate-spin mx-auto" /> : "VALIDER LA CRÉATION"}
+                <button type="submit" disabled={submittingPhase} className="col-span-2 py-6 bg-gray-900 text-white rounded-2xl font-black uppercase text-lg tracking-widest hover:bg-[#00AEEF] transition-all shadow-xl mt-4 active:scale-95">
+                  {submittingPhase ? <Loader2 className="animate-spin mx-auto" /> : "VALIDER ET DÉDUIRE DU BUDGET"}
                 </button>
               </form>
             </div>

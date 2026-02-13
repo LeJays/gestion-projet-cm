@@ -49,7 +49,7 @@ export default function LoginPage() {
           router.push('/experts/dashboard');
           break;
         case 'assistance':
-          router.push('/assistant/dashboard');
+          router.push('/assistance/dashboard');
           break;
         default:
           alert("Accès refusé : Rôle non configuré.");

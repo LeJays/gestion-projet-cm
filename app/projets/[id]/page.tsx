@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import Sidebar from '@/components/Sidebar';
 import { useParams, useRouter } from 'next/navigation';
 import { Layers, Plus, Calendar, ArrowLeft, Clock, Target, Loader2, X, DollarSign, User, PlusCircle } from 'lucide-react';
+export const runtime = 'edge';
 
 export default function DetailProjetNSIK() {
   const { id } = useParams();

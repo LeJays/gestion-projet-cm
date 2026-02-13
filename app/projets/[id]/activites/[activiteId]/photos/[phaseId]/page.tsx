@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, ImageIcon, Download } from 'lucide-react';
+export const runtime = 'edge';
 
 export default function GaleriePhotosPhase() {
   const { phaseId } = useParams();

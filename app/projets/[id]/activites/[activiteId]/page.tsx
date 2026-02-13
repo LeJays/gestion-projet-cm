@@ -7,6 +7,7 @@ import {
   ArrowLeft, CheckCircle2, AlertCircle, 
   Image as ImageIcon, DollarSign, User, Trash2, Edit3, RefreshCcw, Clock, Gavel, Calendar
 } from 'lucide-react';
+export const runtime = 'edge';
 
 export default function GestionPhasesDirection() {
   const { id, activiteId } = useParams();

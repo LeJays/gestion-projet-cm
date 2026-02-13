@@ -5,6 +5,7 @@ import Sidebar from '@/components/Sidebar';
 import { ArrowLeft, Save, Loader2, CheckCircle2, UserPlus, Phone, Mail } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
+export const runtime = 'edge';
 
 export default function ModifierClient() {
   const { id } = useParams(); // Récupère l'ID dans l'URL

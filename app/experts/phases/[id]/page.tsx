@@ -7,6 +7,7 @@ import {
   ArrowLeft, Save, Image as ImageIcon, CheckCircle2, 
   Info, Loader2, Upload, FileText, File
 } from 'lucide-react';
+export const runtime = 'edge';
 
 export default function DetailPhaseExpert() {
   const { id } = useParams();

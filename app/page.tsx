@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { Mail, Lock, Loader2, LogIn, ShieldAlert } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+export const runtime = 'edge'; // Ajoute ceci juste après tes imports
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);

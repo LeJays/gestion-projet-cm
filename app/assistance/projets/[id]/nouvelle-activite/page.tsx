@@ -5,6 +5,7 @@ import Sidebar from '@/components/Sidebar';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Layers, Calendar, ClipboardCheck } from 'lucide-react';
 import Link from 'next/link';
+export const runtime = 'edge';
 
 export default function NouvelleActiviteAssistance({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);

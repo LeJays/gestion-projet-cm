@@ -5,6 +5,7 @@ import Sidebar from '@/components/Sidebar';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Layers, Wallet, Calendar, AlertTriangle, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
+export const runtime = 'edge';
 
 export default function NouvelleActivite() {
   const { id } = useParams(); 

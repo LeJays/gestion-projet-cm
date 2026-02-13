@@ -8,6 +8,7 @@ import {
   DollarSign, PlusCircle, X, Receipt, Wallet, TrendingUp
 } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
+export const runtime = 'edge';
 
 export default function EtatClientDirection() {
   const { id } = useParams();

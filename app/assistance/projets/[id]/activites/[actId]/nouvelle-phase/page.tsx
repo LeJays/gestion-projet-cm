@@ -5,6 +5,7 @@ import Sidebar from '@/components/Sidebar';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, UserPlus, Target, Calendar, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+export const runtime = 'edge';
 
 export default function NouvellePhaseAssistance({ params }: { params: Promise<{ id: string, actId: string }> }) {
   const { id, actId } = use(params);
